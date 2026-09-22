@@ -114,6 +114,14 @@ jobs:
       - name: 创建 Release 并上传固件
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NOTES: |
+            基于 Lede(Lean OpenWrt 24.10) 云编译
+            适用机型：X86_64（Intel J1900 / J1800 软路由）
+            默认管理IP：10.0.1.1   主机名：OpenWRT   用户名：root   密码：password
+
+            内置插件：passwall、passwall2、易有云(luci-app-linkease)、iStore商店、全能推送(pushbot)、微信推送(serverchan)、ddns-go、lucky、OAF行为管理、uhttpd、负载均衡(mwan3)、TTYD、磁盘管理(diskman)、释放内存(ramfree)、Argon主题+设置、自定义命令、Docker(概览/容器/镜像/网络/存储卷/事件/配置)、网络共享(Samba4)、文件列表(OpenList)、流量统计(nlbwmon)、TurboACC(最新BBR)、IP限速(eqosplus)
+
+            1Panel 说明：暂无 luci-app-1panel 插件，已内置 Docker，可通过 1Panel 官方脚本安装（见仓库 README）。
         run: |
           cd $GITHUB_WORKSPACE/artifact
           if [ -z "$(ls -A .)" ]; then
@@ -124,10 +132,4 @@ jobs:
           gh release create "$TAG" ./* \
             --repo "${{ github.repository }}" \
             --title "OpenWrt X86-64 $(date '+%Y-%m-%d %H:%M')" \
-            --notes "基于 Lede(Lean OpenWrt 24.10) 云编译
-适用机型：X86_64（Intel J1900 / J1800 软路由）
-默认管理IP：10.0.1.1   主机名：OpenWRT   用户名：root   密码：password
-
-内置插件：passwall、passwall2、易有云(luci-app-linkease)、iStore商店、全能推送(pushbot)、微信推送(serverchan)、ddns-go、lucky、OAF行为管理、uhttpd、负载均衡(mwan3)、TTYD、磁盘管理(diskman)、释放内存(ramfree)、Argon主题+设置、自定义命令、Docker(概览/容器/镜像/网络/存储卷/事件/配置)、网络共享(Samba4)、文件列表(OpenList)、流量统计(nlbwmon)、TurboACC(最新BBR)、IP限速(eqosplus)
-
-1Panel 说明：暂无 luci-app-1panel 插件，已内置 Docker，可通过 1Panel 官方脚本安装（见仓库 README）。"
+            --notes "$NOTES"

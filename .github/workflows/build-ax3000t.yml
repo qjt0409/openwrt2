@@ -117,6 +117,21 @@ jobs:
       - name: 创建 Release 并上传固件
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NOTES: |
+            基于 Lede(Lean OpenWrt 24.10) 云编译
+            适用机型：小米 AX3000T（MT7981B）
+            默认管理IP：10.0.0.1   主机名：OpenWRT   用户名：root   密码：password
+
+            包含：基础功能 + WiFi 2.4G/5G(可改信道/频段带宽) + IP限速(eqosplus) + passwall + TTYD终端 + TurboACC(最新BBR)
+
+            【不死U-Boot（breed类似物）说明】
+            - 附件已附带 hanwckf/bl-mt798x 最新 Release 压缩包
+            - 推荐刷入：mt7981_ax3000t-fip-fixed-parts-multi-layout.bin（位于压缩包内）
+            - 刷入方法（需先开启官方固件 SSH）：
+              mtd write /tmp/<uboot文件> FIP
+            - 刷完后按住 RESET 上电进入 U-Boot Web 恢复界面（类似 breed 的控制台）
+            - 详细教程见 https://github.com/hanwckf/bl-mt798x
+            - 官方刷机 Wiki：https://openwrt.org/toh/xiaomi/xiaomi_mi_router_ax3000t
         run: |
           cd $GITHUB_WORKSPACE/artifact
           if [ -z "$(ls -A .)" ]; then
@@ -132,17 +147,4 @@ jobs:
           gh release create "$TAG" "${FILES[@]}" \
             --repo "${{ github.repository }}" \
             --title "OpenWrt 小米AX3000T 精简版 $(date '+%Y-%m-%d %H:%M')" \
-            --notes "基于 Lede(Lean OpenWrt 24.10) 云编译
-适用机型：小米 AX3000T（MT7981B）
-默认管理IP：10.0.0.1   主机名：OpenWRT   用户名：root   密码：password
-
-包含：基础功能 + WiFi 2.4G/5G(可改信道/频段带宽) + IP限速(eqosplus) + passwall + TTYD终端 + TurboACC(最新BBR)
-
-【不死U-Boot（breed类似物）说明】
-- 附件已附带 hanwckf/bl-mt798x 最新 Release 压缩包
-- 推荐刷入：mt7981_ax3000t-fip-fixed-parts-multi-layout.bin（位于压缩包内）
-- 刷入方法（需先开启官方固件 SSH）：
-  mtd write /tmp/<uboot文件> FIP
-- 刷完后按住 RESET 上电进入 U-Boot Web 恢复界面（类似 breed 的控制台）
-- 详细教程见 https://github.com/hanwckf/bl-mt798x
-- 官方刷机 Wiki：https://openwrt.org/toh/xiaomi/xiaomi_mi_router_ax3000t"
+            --notes "$NOTES"
