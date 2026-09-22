@@ -45,6 +45,7 @@
 - `软件包管理`（原 luci-app-opkg）在 OpenWrt 24.10 已**并入 luci 本体**（luci-mod-system，菜单「系统 → 软件包」），无需单独插件。
 - `iStore 商店`界面自带简体中文（istore-ui 内置 zh-cn 翻译），无需单独语言包。
 - `luci-app-openlist` 与 `luci-app-alist` 是同一项目前后身（openlist Provides alist），只装 openlist 一个即覆盖"alist 文件列表 + openlist"两项要求。
+- OAF 内核模块已做 Linux 6.18 兼容补丁（`del_timer_sync`→`timer_delete_sync`，见 `.github/patches/oaf-kernel-6.18-timer.patch`，构建时自动应用），保证 OAF 行为管理在 6.18 内核可用。
 - Lede luci feed 自带 `luci-app-passwall`，故不重复 clone 你清单里的 `Openwrt-Passwall/openwrt-passwall`（重复会冲突）。
 - 你清单里其余仓库（themes、clash、dae、adguardhome、easytier 等）不属于上述必装清单，未启用（不删 lede 自带项，也不会误装）。
 

@@ -1,0 +1,22 @@
+--- a/oaf/src/af_client.c	2025-07-03 19:41:23.000000000 +0800
++++ b/oaf/src/af_client.c	2026-09-23 07:34:07.770176664 +0800
+@@ -623,7 +623,7 @@
+         return;
+     }
+     
+-    del_timer_sync(&client->client_timer);
++    timer_delete_sync(&client->client_timer);
+ }
+ 
+ 
+--- a/oaf/src/app_filter.c	2025-07-03 19:41:23.000000000 +0800
++++ b/oaf/src/app_filter.c	2026-09-23 07:34:07.770176664 +0800
+@@ -1565,7 +1565,7 @@
+ 
+ void fini_oaf_timer(void)
+ {
+-	del_timer_sync(&oaf_timer);
++	timer_delete_sync(&oaf_timer);
+ 	AF_INFO("del oaf timer...ok");
+ }
+ 
