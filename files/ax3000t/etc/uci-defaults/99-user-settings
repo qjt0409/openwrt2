@@ -1,0 +1,8 @@
+#!/bin/sh
+# 小米AX3000T 精简固件首启自定义设置（仅执行一次）
+# 主机名 OpenWRT / 管理IP 10.0.0.1
+uci set system.@system[0].hostname='OpenWRT'
+uci set network.lan.ipaddr='10.0.0.1'
+uci commit system
+uci commit network
+exit 0

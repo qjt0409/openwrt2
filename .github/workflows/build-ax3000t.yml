@@ -1,0 +1,148 @@
+name: Build OpenWrt AX3000T
+
+# 小米 AX3000T 精简固件（MT7981B / Filogic 820，256MB RAM / 128MB NAND）
+# 仅包含：基础功能 + WiFi 2.4G/5G(信道/频段带宽) + IP限速(eqosplus) + passwall + TTYD + TurboACC(最新BBR)
+# 触发方式：
+#   1. 手动触发（Actions 页面 Run workflow）
+#   2. 修改 configs/ax3000t.config / files/ax3000t / 本文件 后 push
+#   3. 由 auto-clean-build.yml 每日 03:45/03:50 自动触发
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/build-ax3000t.yml'
+      - 'configs/ax3000t.config'
+      - 'files/ax3000t/**'
+
+env:
+  REPO_URL: https://github.com/coolsnowwolf/lede
+  REPO_BRANCH: master
+  CONFIG_FILE: configs/ax3000t.config
+  FILES_DIR: files/ax3000t
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    name: 编译 小米AX3000T 精简固件
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    steps:
+      - name: 检出配置仓库
+        uses: actions/checkout@v4
+
+      - name: 释放磁盘空间
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/local/share/boost /usr/local/lib/node_modules /opt/hostedtoolcache/CodeQL /usr/local/share/chromium
+          sudo apt-get -y autoremove >/dev/null 2>&1 || true
+          df -h
+
+      - name: 增加交换分区（防止内存不足）
+        run: |
+          sudo fallocate -l 4G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile >/dev/null
+          sudo swapon /swapfile
+          free -h
+
+      - name: 安装编译依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install build-essential gcc g++ binutils bzip2 git \
+            libncurses5-dev libncursesw5-dev zlib1g-dev gawk gettext automake \
+            autoconf libtool libssl-dev rsync flex unzip file python3 python3-pip \
+            python3-setuptools python3-yaml swig libxml2-dev libxslt1-dev uuid-runtime \
+            wget curl jq gperf cpio time p7zip-full
+
+      - name: 克隆 Lede 源码（Lean 大 OpenWrt）
+        run: |
+          git clone --depth 1 -b ${{ env.REPO_BRANCH }} ${{ env.REPO_URL }} openwrt
+          rm -rf openwrt/.git
+
+      - name: 更新并安装 Feeds
+        run: |
+          cd openwrt
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          find feeds -name .git -type d -prune -exec rm -rf {} + 2>/dev/null || true
+
+      - name: 添加外部插件（仅精简所需）
+        run: |
+          cd openwrt
+          git clone --depth 1 https://github.com/sirpdboy/luci-app-eqosplus.git package/luci-app-eqosplus
+
+      - name: 写入自定义系统文件（主机名/IP/密码）
+        run: |
+          mkdir -p openwrt/files
+          cp -r ${{ env.FILES_DIR }}/. openwrt/files/
+
+      - name: 应用固件配置
+        run: |
+          cp ${{ env.CONFIG_FILE }} openwrt/.config
+          cd openwrt
+          make defconfig
+
+      - name: 下载编译依赖
+        run: |
+          cd openwrt
+          make download -j8 || make download -j1 || { sleep 20; make download -j1 V=s; }
+
+      - name: 编译固件
+        run: |
+          cd openwrt
+          make -j$(nproc) V=s || make -j1 V=s
+
+      - name: 下载不死U-Boot（breed类似物，bl-mt798x）
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          UB_REPO=hanwckf/bl-mt798x
+          TAG=$(gh api "repos/$UB_REPO/releases/latest" --jq .tag_name)
+          ASSET=$(gh api "repos/$UB_REPO/releases/latest" --jq '.assets[0].name')
+          curl -sL -o "$GITHUB_WORKSPACE/$ASSET" \
+            "https://github.com/$UB_REPO/releases/download/$TAG/$ASSET"
+          echo "UBOOT_ASSET=$ASSET" >> "$GITHUB_ENV"
+          echo "已下载不死U-Boot: $ASSET (release $TAG)"
+
+      - name: 整理固件产物
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/artifact
+          cd openwrt/bin/targets/mediatek
+          find . -type f \( \
+            -name "*.bin" -o -name "*.itb" -o -name "*.ubi" -o -name "*.tar" \
+            -o -name "*.gz" -o -name "*.manifest" \) \
+            -exec cp -v {} $GITHUB_WORKSPACE/artifact/ \;
+
+      - name: 创建 Release 并上传固件
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd $GITHUB_WORKSPACE/artifact
+          if [ -z "$(ls -A .)" ]; then
+            echo "::error::未找到固件产物，编译可能失败"
+            exit 1
+          fi
+          TAG="ax3000t-$(date +%Y%m%d-%H%M%S)"
+          FILES=(./*)
+          # 附带不死U-Boot
+          if [ -n "${{ env.UBOOT_ASSET }}" ]; then
+            FILES+=("$GITHUB_WORKSPACE/${{ env.UBOOT_ASSET }}")
+          fi
+          gh release create "$TAG" "${FILES[@]}" \
+            --repo "${{ github.repository }}" \
+            --title "OpenWrt 小米AX3000T 精简版 $(date '+%Y-%m-%d %H:%M')" \
+            --notes "基于 Lede(Lean OpenWrt 24.10) 云编译
+适用机型：小米 AX3000T（MT7981B）
+默认管理IP：10.0.0.1   主机名：OpenWRT   用户名：root   密码：password
+
+包含：基础功能 + WiFi 2.4G/5G(可改信道/频段带宽) + IP限速(eqosplus) + passwall + TTYD终端 + TurboACC(最新BBR)
+
+【不死U-Boot（breed类似物）说明】
+- 附件已附带 hanwckf/bl-mt798x 最新 Release 压缩包
+- 推荐刷入：mt7981_ax3000t-fip-fixed-parts-multi-layout.bin（位于压缩包内）
+- 刷入方法（需先开启官方固件 SSH）：
+  mtd write /tmp/<uboot文件> FIP
+- 刷完后按住 RESET 上电进入 U-Boot Web 恢复界面（类似 breed 的控制台）
+- 详细教程见 https://github.com/hanwckf/bl-mt798x
+- 官方刷机 Wiki：https://openwrt.org/toh/xiaomi/xiaomi_mi_router_ax3000t"

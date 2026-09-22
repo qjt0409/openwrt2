@@ -1,0 +1,88 @@
+name: 自动清理与构建
+
+# 自动清理 + 自动构建调度
+#   03:45（北京时间 = UTC 19:45）: 清理 Release（只保留最近15个）→ 清理成功 → 连锁触发 X86 与 AX3000T 构建
+#   03:50（北京时间 = UTC 19:50）: 兜底检查 → 若当天尚未构建（说明 03:45 清理失败未触发）→ 自动触发构建
+# 说明：GitHub Actions 的 schedule 使用 UTC 时间，03:45/03:50 北京时间对应 19:45/19:50 UTC。
+
+on:
+  schedule:
+    - cron: '45 19 * * *'   # 北京时间 03:45
+    - cron: '50 19 * * *'   # 北京时间 03:50
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  cleanup-and-build:
+    name: 清理旧Release并连锁构建（03:45）
+    if: github.event.schedule == '45 19 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 清理 Release（只保留最近15个）
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          repo="${{ github.repository }}"
+          ids=()
+          page=1
+          while : ; do
+            out=$(gh api "repos/$repo/releases?per_page=100&page=$page")
+            count=$(echo "$out" | jq 'length')
+            [ "$count" = "0" ] && break
+            while read -r id; do ids+=("$id"); done < <(echo "$out" | jq -r '.[].id')
+            [ "$count" -lt 100 ] && break
+            page=$((page + 1))
+          done
+          total=${#ids[@]}
+          echo "当前 Release 数量：$total（接口按最新优先返回）"
+          if [ "$total" -le 15 ]; then
+            echo "Release 数量 ≤ 15，无需清理"
+          else
+            echo "需要删除 $((total - 15)) 个旧 Release："
+            for ((i = 15; i < total; i++)); do
+              echo "  删除 Release id=${ids[$i]}"
+              gh api -X DELETE "repos/$repo/releases/${ids[$i]}" >/dev/null || exit 1
+            done
+          fi
+
+      - name: 清理成功 → 连锁触发构建
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          gh workflow run build-x86.yml --ref main
+          gh workflow run build-ax3000t.yml --ref main
+          echo "已连锁触发：X86 与 小米AX3000T 云编译"
+
+  fallback-build:
+    name: 兜底构建（03:50）
+    if: github.event.schedule == '50 19 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检查当天是否已触发构建，未触发则兜底构建
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          repo="${{ github.repository }}"
+          since=$(date -u -d "$(date -u +%Y-%m-%d) 00:00:00" +%Y-%m-%dT%H:%M:%SZ)
+          echo "统计范围：UTC $since 之后"
+          count=$(curl -s --get \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/$repo/actions/runs" \
+            --data-urlencode "created=>=$since" \
+            --data-urlencode "per_page=100" \
+            | jq '[.workflow_runs[] | select(.name == "Build OpenWrt X86" or .name == "Build OpenWrt AX3000T")] | length')
+          echo "今天已触发的构建次数：$count"
+          if [ "$count" -eq 0 ]; then
+            echo "03:45 清理流程未成功触发构建，执行 03:50 兜底构建"
+            gh workflow run build-x86.yml --ref main
+            gh workflow run build-ax3000t.yml --ref main
+            echo "兜底构建已触发"
+          else
+            echo "当天构建已存在，跳过兜底"
+          fi
