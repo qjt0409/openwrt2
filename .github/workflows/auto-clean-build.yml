@@ -56,8 +56,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          gh workflow run build-x86.yml --ref main
-          gh workflow run build-ax3000t.yml --ref main
+          gh workflow run build-x86.yml --repo "${{ github.repository }}" --ref main
+          gh workflow run build-ax3000t.yml --repo "${{ github.repository }}" --ref main
           echo "已连锁触发：X86 与 小米AX3000T 云编译"
 
   fallback-build:
@@ -81,8 +81,8 @@ jobs:
                | sort_by(.created_at | fromdateiso8601) | reverse | .[0] // empty')
           if [ -z "$newest" ]; then
             echo "未找到今天 03:45 的清理运行（可能被跳过或延迟），执行兜底构建"
-            gh workflow run build-x86.yml --ref main
-            gh workflow run build-ax3000t.yml --ref main
+            gh workflow run build-x86.yml --repo "${{ github.repository }}" --ref main
+            gh workflow run build-ax3000t.yml --repo "${{ github.repository }}" --ref main
             echo "兜底构建已触发"
             exit 0
           fi
@@ -94,7 +94,7 @@ jobs:
             echo "03:45 清理已成功并连锁触发构建，跳过 03:50 兜底"
           else
             echo "03:45 清理未成功（status=$status conclusion=$conclusion），执行兜底构建"
-            gh workflow run build-x86.yml --ref main
-            gh workflow run build-ax3000t.yml --ref main
+            gh workflow run build-x86.yml --repo "${{ github.repository }}" --ref main
+            gh workflow run build-ax3000t.yml --repo "${{ github.repository }}" --ref main
             echo "兜底构建已触发"
           fi
