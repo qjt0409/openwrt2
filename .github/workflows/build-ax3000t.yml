@@ -2,10 +2,16 @@ name: Build OpenWrt AX3000T
 
 # 小米 AX3000T 精简固件（MT7981B / Filogic 820，256MB RAM / 128MB NAND）
 # 仅包含：基础功能 + WiFi 2.4G/5G(信道/频段带宽) + IP限速(eqosplus) + passwall + TTYD + TurboACC(最新BBR)
+# 注意：这是 AX3000T 专用精简配置，与 X86 全功能配置相互独立，不要混用。
 # 触发方式：
 #   1. 手动触发（Actions 页面 Run workflow）
 #   2. 修改 configs/ax3000t.config / files/ax3000t / 本文件 后 push
 #   3. 由 auto-clean-build.yml 每日 03:45/03:50 自动触发
+#
+# 外部插件说明（其余均用 lede feeds 自带）：
+#   - passwall 依赖包  : Openwrt-Passwall/openwrt-passwall-packages（仅需 ipt2socks 等，去除与 feed 重复的子包）
+#   - IP 限速          : sirpdboy/luci-app-eqosplus
+#   - passwall / TTYD / TurboACC：lede luci feed 自带
 
 on:
   workflow_dispatch:
@@ -72,11 +78,25 @@ jobs:
           cd openwrt
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+          # 释放 feeds 的 .git 空间
           find feeds -name .git -type d -prune -exec rm -rf {} + 2>/dev/null || true
 
       - name: 添加外部插件（仅精简所需）
         run: |
           cd openwrt
+
+          # passwall 硬依赖包（ipt2socks 等 lede feed 没有，需要 passwall-packages 补充；
+          # 同时去除与 feed 重复的子包，避免包名冲突）
+          git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git package/openwrt-passwall-packages
+          rm -rf package/openwrt-passwall-packages/chinadns-ng \
+                 package/openwrt-passwall-packages/dns2socks \
+                 package/openwrt-passwall-packages/geoview \
+                 package/openwrt-passwall-packages/microsocks \
+                 package/openwrt-passwall-packages/sing-box \
+                 package/openwrt-passwall-packages/tcping \
+                 package/openwrt-passwall-packages/xray-core
+
+          # IP 限速
           git clone --depth 1 https://github.com/sirpdboy/luci-app-eqosplus.git package/luci-app-eqosplus
 
       - name: 写入自定义系统文件（主机名/IP/密码）
@@ -98,6 +118,7 @@ jobs:
       - name: 编译固件
         run: |
           cd openwrt
+          # 并行编译失败后自动降级单线程续编
           make -j$(nproc) V=s || make -j1 V=s
 
       - name: 下载不死U-Boot（breed类似物，bl-mt798x）
@@ -125,11 +146,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NOTES: |
-            基于 Lede(Lean OpenWrt 24.10) 云编译
+            基于 Lede(Lean OpenWrt 24.10) 云编译，精简版含简体中文包
             适用机型：小米 AX3000T（MT7981B）
             默认管理IP：10.0.0.1   主机名：OpenWRT   用户名：root   密码：password
 
-            包含：基础功能 + WiFi 2.4G/5G(可改信道/频段带宽) + IP限速(eqosplus) + passwall + TTYD终端 + TurboACC(最新BBR)
+            包含：基础功能 + WiFi 2.4G/5G(可改信道/频段带宽) + IP限速(eqosplus) + passwall(精简sing-box核心) + TTYD终端 + TurboACC(最新BBR)
 
             【不死U-Boot（breed类似物）说明】
             - 附件已附带 hanwckf/bl-mt798x 最新 Release 压缩包

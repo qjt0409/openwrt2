@@ -5,6 +5,16 @@ name: Build OpenWrt X86
 #   1. 手动触发（Actions 页面 Run workflow）
 #   2. 修改 configs/x86.config / files/x86 / 本文件 后 push
 #   3. 由 auto-clean-build.yml 每日 03:45/03:50 自动触发
+#
+# 外部插件说明（其余均用 lede feeds 自带，避免重复冲突）：
+#   - passwall2          : Openwrt-Passwall/openwrt-passwall2
+#   - passwall 依赖包    : Openwrt-Passwall/openwrt-passwall-packages（去除与 feed 重复的 7 个子包）
+#   - 易有云守护进程     : linkease/nas-packages（network/services/linkease + linkease-common-bin）
+#   - 易有云界面         : linkease/luci-app-linkease
+#   - iStore 商店        : linkease/istore
+#   - 全能推送           : zzsj0928/luci-app-pushbot
+#   - IP 限速            : sirpdboy/luci-app-eqosplus
+#   - ddns-go / lucky / wechatpush / OAF / openlist 等：lede luci/packages feed 已自带，不再外部克隆
 
 on:
   workflow_dispatch:
@@ -82,14 +92,36 @@ jobs:
       - name: 添加外部插件
         run: |
           cd openwrt
+
+          # 1. passwall2（仓库内 luci-app-passwall2 为子目录，OpenWrt 会递归扫描 package/）
           git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall2.git package/luci-app-passwall2
-          git clone --depth 1 https://github.com/sirpdboy/luci-app-ddns-go.git package/luci-app-ddns-go
-          git clone --depth 1 https://github.com/sirpdboy/luci-app-eqosplus.git package/luci-app-eqosplus
-          git clone --depth 1 https://github.com/sirpdboy/luci-app-lucky.git package/luci-app-lucky
-          git clone --depth 1 https://github.com/tty228/luci-app-serverchan.git package/luci-app-serverchan
-          git clone --depth 1 https://github.com/zzsj0928/luci-app-pushbot.git package/luci-app-pushbot
-          git clone --depth 1 https://github.com/linkease/istore.git package/istore
+
+          # 2. passwall/passwall2 依赖包（v2ray-geoip/geosite、ipt2socks、shadowsocks-rust 等）
+          #    去除与 lede packages feed 重复的子包：chinadns-ng dns2socks geoview microsocks sing-box tcping xray-core
+          git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git package/openwrt-passwall-packages
+          rm -rf package/openwrt-passwall-packages/chinadns-ng \
+                 package/openwrt-passwall-packages/dns2socks \
+                 package/openwrt-passwall-packages/geoview \
+                 package/openwrt-passwall-packages/microsocks \
+                 package/openwrt-passwall-packages/sing-box \
+                 package/openwrt-passwall-packages/tcping \
+                 package/openwrt-passwall-packages/xray-core
+
+          # 3. 易有云（luci 界面 + 守护进程二进制，来自 linkease 官方仓库）
           git clone --depth 1 https://github.com/linkease/luci-app-linkease.git package/luci-app-linkease
+          git clone --depth 1 https://github.com/linkease/nas-packages.git /tmp/nas-packages
+          cp -r /tmp/nas-packages/network/services/linkease package/linkease
+          cp -r /tmp/nas-packages/network/services/linkease-common-bin package/linkease-common-bin
+          rm -rf /tmp/nas-packages
+
+          # 4. iStore 商店（内含 luci-app-store / luci-lib-taskd / luci-lib-xterm / taskd）
+          git clone --depth 1 https://github.com/linkease/istore.git package/istore
+
+          # 5. 全能推送
+          git clone --depth 1 https://github.com/zzsj0928/luci-app-pushbot.git package/luci-app-pushbot
+
+          # 6. IP 限速
+          git clone --depth 1 https://github.com/sirpdboy/luci-app-eqosplus.git package/luci-app-eqosplus
 
       - name: 写入自定义系统文件（主机名/IP/密码）
         run: |
@@ -119,6 +151,7 @@ jobs:
           cd openwrt/bin/targets/x86
           find . -type f \( \
             -name "*.img.gz" -o -name "*.img" -o -name "*.iso" -o -name "*.tar" \
+            -o -name "*.tar.gz" -o -name "*.gz" \
             -o -name "*.vmdk" -o -name "*.qcow2" -o -name "*.vhd" -o -name "*.vhdx" \
             -o -name "*.manifest" -o -name "kernel.bin" \) \
             -exec cp -v {} $GITHUB_WORKSPACE/artifact/ \;
@@ -127,13 +160,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NOTES: |
-            基于 Lede(Lean OpenWrt 24.10) 云编译
+            基于 Lede(Lean OpenWrt 24.10) 云编译，全插件含简体中文包
             适用机型：X86_64（Intel J1900 / J1800 软路由）
             默认管理IP：10.0.1.1   主机名：OpenWRT   用户名：root   密码：password
 
-            内置插件：passwall、passwall2、易有云(luci-app-linkease)、iStore商店、全能推送(pushbot)、微信推送(serverchan)、ddns-go、lucky、OAF行为管理、uhttpd、负载均衡(mwan3)、TTYD、磁盘管理(diskman)、释放内存(ramfree)、Argon主题+设置、自定义命令、Docker(概览/容器/镜像/网络/存储卷/事件/配置)、网络共享(Samba4)、文件列表(OpenList)、流量统计(nlbwmon)、TurboACC(最新BBR)、IP限速(eqosplus)
+            内置插件：passwall、passwall2、易有云(luci-app-linkease+守护进程)、iStore商店、全能推送(pushbot)、微信推送(wechatpush)、ddns-go、lucky、OAF行为管理、uhttpd、负载均衡(mwan3)、TTYD、磁盘管理(diskman)、释放内存(ramfree)、Argon主题+设置、自定义命令、Docker(概览/容器/镜像/网络/存储卷/事件/配置)、网络共享(Samba4)、文件列表(OpenList/兼容alist)、流量统计(nlbwmon)、TurboACC(最新BBR)、IP限速(eqosplus)
 
-            1Panel 说明：暂无 luci-app-1panel 插件，已内置 Docker，可通过 1Panel 官方脚本安装（见仓库 README）。
+            1Panel 说明：开源社区暂无 luci-app-1panel 插件，本固件已内置 Docker，
+            可在 Docker 中运行 1Panel（官方一键脚本，见仓库 README）。
         run: |
           cd $GITHUB_WORKSPACE/artifact
           if [ -z "$(ls -A .)" ]; then
