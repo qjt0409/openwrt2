@@ -77,7 +77,14 @@ jobs:
         run: cd openwrt && make download -j8 || make download -j1
 
       - name: 编译固件
-        run: cd openwrt && make -j$(nproc) || make -j1
+        run: |
+          cd openwrt
+          make -j$(nproc) > build.log 2>&1 || {
+            echo "::error::编译失败，显示最后 200 行错误："
+            tail -200 build.log
+            exit 1
+          }
+          echo "✅ 编译成功"
 
       - name: 整理产物并发布 Release
         env:
