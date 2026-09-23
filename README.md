@@ -41,7 +41,7 @@
 | TurboACC（BBR 最新） | `luci-app-turboacc`（Flow offloading + BBR CCA） | Lede router 默认内置 |
 | IP 限速 | `luci-app-eqosplus` | `sirpdboy/luci-app-eqosplus` |
 
-**中文语言包：** OpenWrt 24.10 / Lede 的 LuCI 语言包命名规范为 `luci-i18n-<插件>-zh_Hans`（po 目录 `zh-cn` 会自动映射为 `zh_Hans`），上述所有带中文包的插件均已配置安装，未配置的插件则无中文包。
+**中文语言包：** Lede LuCI 的语言包包名为 `luci-i18n-<插件>-zh-cn`（po 目录 `zh_Hans`/`zh-cn` 均生成该包名，且 LuCI 语言默认开关会自动启用所有插件的简体中文包），上述所有带中文包的插件均已显式配置安装。
 
 **关于"与自带基础插件重复"的处理（你要的说明）：**
 - `流量统计`、`TurboACC`、`luci`、`ssr-plus` 等本就是 Lede 的 **router 默认内置插件**（`include/target.mk` 的 `DEFAULT_PACKAGES.router`），不是重复添加——它们会随固件默认编译进去，无需、也无法通过 `.config` 删除（符合"其他插件不要删除"）。
