@@ -46,7 +46,7 @@ jobs:
             libncurses5-dev libncursesw5-dev zlib1g-dev gawk gettext automake \
             autoconf libtool libssl-dev rsync flex unzip file python3 python3-pip \
             python3-setuptools python3-yaml swig libxml2-dev libxslt1-dev uuid-runtime \
-            wget curl jq gperf cpio time p7zip-full
+            wget curl jq gperf cpio time p7zip-full qemu-utils
 
       - name: 准备源码、插件与配置
         run: |
@@ -80,8 +80,11 @@ jobs:
         run: |
           cd openwrt
           make -j$(nproc) > build.log 2>&1 || {
-            echo "::error::编译失败，显示最后 200 行错误："
-            tail -200 build.log
+            echo "::error::编译失败"
+            echo "=== 错误行（error/failed/fatal/no space/not found） ==="
+            grep -iE "error:|failed to|fatal|No space|not found|cannot|No such" build.log | grep -v "^make\[" | tail -60
+            echo "=== build.log 最后 150 行 ==="
+            tail -150 build.log
             exit 1
           }
           echo "✅ 编译成功"
