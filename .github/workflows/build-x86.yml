@@ -86,7 +86,7 @@ jobs:
           # 释放 feeds 的 .git 空间
           find feeds -name .git -type d -prune -exec rm -rf {} + 2>/dev/null || true
 
-      - name: 修补 OAF 内核模块（兼容 Linux 6.18：del_timer_sync 已移除）
+      - name: 修补 OAF 内核模块（兼容 Linux 6.18：del_timer_sync→timer_delete_sync、from_timer→container_of）
         run: |
           mkdir -p openwrt/feeds/packages/net/open-app-filter/patches
           cp .github/patches/oaf-kernel-6.18-timer.patch openwrt/feeds/packages/net/open-app-filter/patches/

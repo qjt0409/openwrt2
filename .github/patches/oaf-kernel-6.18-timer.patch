@@ -1,6 +1,17 @@
---- a/oaf/src/af_client.c	2025-07-03 19:41:23.000000000 +0800
-+++ b/oaf/src/af_client.c	2026-09-23 07:34:07.770176664 +0800
-@@ -623,7 +623,7 @@
+diff --git a/oaf/src/af_client.c b/oaf/src/af_client.c
+index 8f78d48..13e0a3d 100755
+--- a/oaf/src/af_client.c
++++ b/oaf/src/af_client.c
+@@ -574,7 +574,7 @@ static struct nf_hook_ops af_client_ops[] = {
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
+ static void client_timer_handler(struct timer_list *t)
+ {
+-    af_client_info_t *client = from_timer(client, t, client_timer);
++    af_client_info_t *client = container_of(t, af_client_info_t, client_timer);
+ #else
+ static void client_timer_handler(unsigned long data)
+ {
+@@ -623,7 +623,7 @@ static void client_timer_handler(unsigned long data)
          return;
      }
      
@@ -9,9 +20,11 @@
  }
  
  
---- a/oaf/src/app_filter.c	2025-07-03 19:41:23.000000000 +0800
-+++ b/oaf/src/app_filter.c	2026-09-23 07:34:07.770176664 +0800
-@@ -1565,7 +1565,7 @@
+diff --git a/oaf/src/app_filter.c b/oaf/src/app_filter.c
+index edc2719..d90be2e 100755
+--- a/oaf/src/app_filter.c
++++ b/oaf/src/app_filter.c
+@@ -1565,7 +1565,7 @@ void init_oaf_timer(void)
  
  void fini_oaf_timer(void)
  {

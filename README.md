@@ -48,7 +48,7 @@
 - `软件包管理`（原 luci-app-opkg）在 OpenWrt 24.10 已**并入 luci 本体**（luci-mod-system，菜单「系统 → 软件包」），无需单独插件。
 - `iStore 商店`界面自带简体中文（istore-ui 内置 zh-cn 翻译），无需单独语言包。
 - `luci-app-openlist` 与 `luci-app-alist` 是同一项目前后身（openlist 的 Makefile 声明 `PROVIDES: luci-app-alist`），只装 openlist 一个即覆盖"alist 文件列表 + openlist"两项要求。
-- OAF 内核模块已做 Linux 6.18 兼容补丁（`del_timer_sync`→`timer_delete_sync`，见 `.github/patches/oaf-kernel-6.18-timer.patch`，构建时自动应用），保证 OAF 行为管理在 6.18 内核可用。
+- OAF 内核模块已做 Linux 6.18 兼容补丁（`del_timer_sync`→`timer_delete_sync`、`from_timer`→`container_of`，见 `.github/patches/oaf-kernel-6.18-timer.patch`，构建时自动应用），保证 OAF 行为管理在 6.18 内核可用。
 - `Docker`：lede 自带 `luci-app-docker`(Lua) 仅为 Portainer 启动页，不含你要的 7 个管理菜单，故改用 `luci-app-dockerman`(JS)，菜单为「概览/容器/镜像/网络/存储卷/事件/配置」。
 - `passwall/passwall2` 的全部依赖（xray-core、sing-box、v2ray-geodata、ipt2socks、shadowsocks-rust、geoview 等）由 lede helloworld + packages feed 提供，**不再克隆 `openwrt-passwall-packages`**（经实测该仓库全部 17 个子包与 lede feeds 重复，克隆会引发重复包冲突）。
 - `ddns-go`、`lucky`、`微信推送(wechatpush)` 均已被 Lede feeds 收录，外部同名仓库不再克隆（克隆会因包名重复导致构建失败）。
