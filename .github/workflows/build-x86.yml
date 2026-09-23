@@ -81,13 +81,21 @@ jobs:
           cd openwrt
           make -j$(nproc) > build.log 2>&1 || {
             echo "::error::编译失败"
-            echo "=== 错误行（error/failed/fatal/no space/not found） ==="
-            grep -iE "error:|failed to|fatal|No space|not found|cannot|No such" build.log | grep -v "^make\[" | tail -60
-            echo "=== build.log 最后 150 行 ==="
-            tail -150 build.log
+            echo "=== 错误行上下文（ERROR 前后各 20 行） ==="
+            grep -B20 -A20 "ERROR:" build.log | head -100
+            echo "=== build.log 最后 100 行 ==="
+            tail -100 build.log
             exit 1
           }
           echo "✅ 编译成功"
+
+      - name: 失败时上传完整编译日志
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-x86
+          path: openwrt/build.log
+          retention-days: 3
 
       - name: 整理产物并发布 Release
         env:
