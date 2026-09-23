@@ -90,18 +90,20 @@
 ## 四、手动使用
 
 1. 仓库根目录 → **Actions** 页 → 选择 `Build OpenWrt X86` 或 `Build OpenWrt AX3000T` → **Run workflow** 即可手动云编译。
-2. 编译完成后固件自动上传到 **Releases**（x86 附 img.gz 镜像；ax3000t 附 sysupgrade.bin 与不死U-Boot）。
+2. 编译完成后固件自动上传到 **Releases**：
+   - **X86**：产出全格式镜像 `ext4/squashfs × combined/combined-efi/rootfs` + `kernel.bin`，以及 `VMDK(VMware)/VDI(VirtualBox)/QCOW2(PVE/KVM)/VHDX(Hyper-V)/ISO(LiveCD)`，物理机、虚拟机、PVE/ESXi 均可直接使用。
+   - **AX3000T**：`squashfs-sysupgrade.bin` + 不死U-Boot（bl-mt798x）。
 3. 修改 `configs/*.config` 或 `files/*` 并 push 到 main 分支也会自动触发对应构建。
 
 ## 五、文件结构
 
 ```
 .github/workflows/
-  build-x86.yml          # X86_64 全功能构建
-  build-ax3000t.yml      # 小米 AX3000T 精简构建
+  build-x86.yml          # X86_64 全功能构建（6 步：检出→环境准备→源码/插件/配置→下载→编译→发布）
+  build-ax3000t.yml      # 小米 AX3000T 精简构建（同上 6 步，发布附带不死U-Boot）
   auto-clean-build.yml   # 每日 03:45 清理+连锁构建 / 03:50 兜底构建
 configs/
-  x86.config             # X86 全功能配置
+  x86.config             # X86 全功能配置（含全格式镜像选项）
   ax3000t.config         # AX3000T 精简配置
 files/
   x86/                   # X86 首启设置（主机名/IP/密码）
