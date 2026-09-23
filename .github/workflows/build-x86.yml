@@ -80,11 +80,8 @@ jobs:
         run: |
           cd openwrt
           make -j$(nproc) > build.log 2>&1 || {
-            echo "::error::编译失败"
-            echo "=== 错误行上下文（ERROR 前后各 20 行） ==="
-            grep -B20 -A20 "ERROR:" build.log | head -100
-            echo "=== build.log 最后 100 行 ==="
-            tail -100 build.log
+            echo "::error::编译失败，单线程重跑 target/install 查看详细错误："
+            make target/install V=s 2>&1 | tail -120
             exit 1
           }
           echo "✅ 编译成功"
