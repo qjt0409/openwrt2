@@ -9,9 +9,9 @@ name: Build OpenWrt AX3000T
 #   3. 由 auto-clean-build.yml 每日 03:45/03:50 自动触发
 #
 # 外部插件说明（其余均用 lede feeds 自带）：
-#   - passwall 依赖包  : Openwrt-Passwall/openwrt-passwall-packages（仅需 ipt2socks 等，去除与 feed 重复的子包）
 #   - IP 限速          : sirpdboy/luci-app-eqosplus
 #   - passwall / TTYD / TurboACC：lede luci feed 自带
+#   - passwall 依赖（sing-box/ipt2socks 等）：lede helloworld + packages feed 自带，无需克隆 passwall-packages
 
 on:
   workflow_dispatch:
@@ -84,17 +84,6 @@ jobs:
       - name: 添加外部插件（仅精简所需）
         run: |
           cd openwrt
-
-          # passwall 硬依赖包（ipt2socks 等 lede feed 没有，需要 passwall-packages 补充；
-          # 同时去除与 feed 重复的子包，避免包名冲突）
-          git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git package/openwrt-passwall-packages
-          rm -rf package/openwrt-passwall-packages/chinadns-ng \
-                 package/openwrt-passwall-packages/dns2socks \
-                 package/openwrt-passwall-packages/geoview \
-                 package/openwrt-passwall-packages/microsocks \
-                 package/openwrt-passwall-packages/sing-box \
-                 package/openwrt-passwall-packages/tcping \
-                 package/openwrt-passwall-packages/xray-core
 
           # IP 限速
           git clone --depth 1 https://github.com/sirpdboy/luci-app-eqosplus.git package/luci-app-eqosplus

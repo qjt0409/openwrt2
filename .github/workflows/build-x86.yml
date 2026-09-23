@@ -8,13 +8,15 @@ name: Build OpenWrt X86
 #
 # 外部插件说明（其余均用 lede feeds 自带，避免重复冲突）：
 #   - passwall2          : Openwrt-Passwall/openwrt-passwall2
-#   - passwall 依赖包    : Openwrt-Passwall/openwrt-passwall-packages（去除与 feed 重复的 7 个子包）
 #   - 易有云守护进程     : linkease/nas-packages（network/services/linkease + linkease-common-bin）
 #   - 易有云界面         : linkease/luci-app-linkease
 #   - iStore 商店        : linkease/istore
 #   - 全能推送           : zzsj0928/luci-app-pushbot
 #   - IP 限速            : sirpdboy/luci-app-eqosplus
-#   - ddns-go / lucky / wechatpush / OAF / openlist 等：lede luci/packages feed 已自带，不再外部克隆
+#   - passwall/passwall2 依赖（xray-core/sing-box/v2ray-geodata/ipt2socks/shadowsocks-rust/geoview 等）：
+#     lede helloworld + packages feed 已全部自带，不再克隆 openwrt-passwall-packages
+#     （该仓库全部子包与 lede feeds 重复，克隆会引发重复包冲突）
+#   - ddns-go / lucky / wechatpush / OAF / openlist / dockerman 等：lede luci/packages feed 已自带，不再外部克隆
 
 on:
   workflow_dispatch:
@@ -96,16 +98,9 @@ jobs:
           # 1. passwall2（仓库内 luci-app-passwall2 为子目录，OpenWrt 会递归扫描 package/）
           git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall2.git package/luci-app-passwall2
 
-          # 2. passwall/passwall2 依赖包（v2ray-geoip/geosite、ipt2socks、shadowsocks-rust 等）
-          #    去除与 lede packages feed 重复的子包：chinadns-ng dns2socks geoview microsocks sing-box tcping xray-core
-          git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git package/openwrt-passwall-packages
-          rm -rf package/openwrt-passwall-packages/chinadns-ng \
-                 package/openwrt-passwall-packages/dns2socks \
-                 package/openwrt-passwall-packages/geoview \
-                 package/openwrt-passwall-packages/microsocks \
-                 package/openwrt-passwall-packages/sing-box \
-                 package/openwrt-passwall-packages/tcping \
-                 package/openwrt-passwall-packages/xray-core
+          # 2. passwall/passwall2 依赖由 lede helloworld + packages feed 提供（xray-core/sing-box/
+          #    v2ray-geodata/ipt2socks/shadowsocks-rust/geoview 等），无需克隆 passwall-packages，
+          #    避免与 feed 重复包冲突。
 
           # 3. 易有云（luci 界面 + 守护进程二进制，来自 linkease 官方仓库）
           git clone --depth 1 https://github.com/linkease/luci-app-linkease.git package/luci-app-linkease

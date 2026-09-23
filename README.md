@@ -17,7 +17,7 @@
 |---|---|---|
 | passwall | `luci-app-passwall`（v26.9.1，含 xray + sing-box 核心） | **Lede luci feed 自带**（与 `Openwrt-Passwall/openwrt-passwall` 同源，避免重复冲突） |
 | passwall2 | `luci-app-passwall2`（All 核心） | `Openwrt-Passwall/openwrt-passwall2` |
-| passwall/passwall2 依赖 | v2ray-geoip、v2ray-geosite、ipt2socks、shadowsocks-rust 等 | `Openwrt-Passwall/openwrt-passwall-packages`（构建时自动去除与 feed 重复的 7 个子包：chinadns-ng/dns2socks/geoview/microsocks/sing-box/tcping/xray-core） |
+| passwall/passwall2 依赖 | v2ray-geoip、v2ray-geosite、ipt2socks、shadowsocks-rust 等 | **lede helloworld + packages feed 自带**（无需克隆 `openwrt-passwall-packages`——其全部子包与 lede feeds 重复，克隆会引发重复包冲突） |
 | 易有云文件管理器 | `luci-app-linkease` + **守护进程 `linkease`**（二进制来自 istoreos 官方） | `linkease/luci-app-linkease` + `linkease/nas-packages`（自行找到） |
 | 1Panel | 无 luci 插件 → 见下方【1Panel 说明】 | — |
 | 全能推送 | `luci-app-pushbot` | `zzsj0928/luci-app-pushbot`（你清单外，自行找到） |
@@ -34,7 +34,7 @@
 | Argon 设置 | `luci-app-argon-config` | Lede luci feed 自带 |
 | iStore 商店（含中文包） | `luci-app-store` + `luci-lib-taskd` + `taskd` + `luci-lib-xterm` | `linkease/istore`（界面内置简体中文） |
 | 自定义命令 | `luci-app-commands` | Lede luci feed 自带 |
-| Docker（概览/容器/镜像/网络/存储卷/事件/配置） | `luci-app-docker` + `docker` + `dockerd` | Lede luci feed + packages feed 自带 |
+| Docker（概览/容器/镜像/网络/存储卷/事件/配置） | `luci-app-dockerman` + `docker` + `dockerd` | Lede luci feed + packages feed 自带（说明：lede 自带的 `luci-app-docker`(Lua) 仅是 Portainer 启动页，不含你要的 7 个管理菜单；`luci-app-dockerman`(JS) 才含 概览/容器/镜像/网络/存储卷/事件/配置，故用 dockerman 替代） |
 | 网络共享 | `luci-app-samba4` | Lede luci feed 自带 |
 | alist 文件列表 / openlist | `luci-app-openlist`（OpenList 是 Alist 的继任者，Makefile 声明 `PKG_PROVIDES:=luci-app-alist`） | Lede luci feed 自带 |
 | 流量统计 | `luci-app-nlbwmon` | Lede router 默认内置 |
@@ -49,6 +49,8 @@
 - `iStore 商店`界面自带简体中文（istore-ui 内置 zh-cn 翻译），无需单独语言包。
 - `luci-app-openlist` 与 `luci-app-alist` 是同一项目前后身（openlist 的 Makefile 声明 `PROVIDES: luci-app-alist`），只装 openlist 一个即覆盖"alist 文件列表 + openlist"两项要求。
 - OAF 内核模块已做 Linux 6.18 兼容补丁（`del_timer_sync`→`timer_delete_sync`，见 `.github/patches/oaf-kernel-6.18-timer.patch`，构建时自动应用），保证 OAF 行为管理在 6.18 内核可用。
+- `Docker`：lede 自带 `luci-app-docker`(Lua) 仅为 Portainer 启动页，不含你要的 7 个管理菜单，故改用 `luci-app-dockerman`(JS)，菜单为「概览/容器/镜像/网络/存储卷/事件/配置」。
+- `passwall/passwall2` 的全部依赖（xray-core、sing-box、v2ray-geodata、ipt2socks、shadowsocks-rust、geoview 等）由 lede helloworld + packages feed 提供，**不再克隆 `openwrt-passwall-packages`**（经实测该仓库全部 17 个子包与 lede feeds 重复，克隆会引发重复包冲突）。
 - `ddns-go`、`lucky`、`微信推送(wechatpush)` 均已被 Lede feeds 收录，外部同名仓库不再克隆（克隆会因包名重复导致构建失败）。
 - 你清单里其余仓库（themes、clash、dae、adguardhome、easytier 等）不属于上述必装清单，未启用（不删 lede 自带项，也不会误装）。
 
@@ -66,7 +68,7 @@
 - **基础功能**（Luci、防火墙、opkg，含中文语言包）
 - **WiFi 2.4G / 5G**：设备默认包 `kmod-mt7981-firmware` / `mt7981-wo-firmware`，信道、频段带宽在 LuCI「无线」页面直接修改
 - **IP 限速**：`luci-app-eqosplus`
-- **passwall**（精简：仅内置 sing-box 核心，xray 等核心运行时可在线下载，适配 128MB 闪存；同时添加 passwall-packages 补齐硬依赖 ipt2socks 等）
+- **passwall**（精简：仅内置 sing-box 核心，xray 等核心运行时可在线下载，适配 128MB 闪存；硬依赖 ipt2socks 等由 lede helloworld feed 提供）
 - **TTYD 终端**：`luci-app-ttyd`
 - **TurboACC（最新 BBR）**：`luci-app-turboacc`
 

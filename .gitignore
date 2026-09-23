@@ -1,2 +1,4 @@
 # 系统临时目录
 .tmp-tool-results/
+# 本地验证用的 OpenWrt 完整检出（840MB，绝不能推送到 GitHub）
+.local-verify/
