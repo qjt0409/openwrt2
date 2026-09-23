@@ -18,7 +18,7 @@
 | passwall | `luci-app-passwall`（v26.9.1，含 xray + sing-box 核心） | **Lede luci feed 自带**（与 `Openwrt-Passwall/openwrt-passwall` 同源，避免重复冲突） |
 | passwall2 | `luci-app-passwall2`（All 核心） | `Openwrt-Passwall/openwrt-passwall2` |
 | passwall/passwall2 依赖 | v2ray-geoip、v2ray-geosite、ipt2socks、shadowsocks-rust 等 | **lede helloworld + packages feed 自带**（无需克隆 `openwrt-passwall-packages`——其全部子包与 lede feeds 重复，克隆会引发重复包冲突） |
-| 易有云文件管理器 | `luci-app-linkease` + **守护进程 `linkease`**（二进制来自 istoreos 官方） | `linkease/luci-app-linkease` + `linkease/nas-packages`（自行找到） |
+| 易有云文件管理器 | `luci-app-linkease` + **守护进程 `linkease`**（二进制来自 istoreos 官方） | `linkease/luci-app-linkease` + `linkease/nas-packages`（自行找到；构建时删除 luci 包内重复的 `/etc/config/linkease`，该文件由守护进程包提供，避免 rootfs 组装冲突） |
 | 1Panel | 无 luci 插件 → 见下方【1Panel 说明】 | — |
 | 全能推送 | `luci-app-pushbot` | `zzsj0928/luci-app-pushbot`（你清单外，自行找到） |
 | 微信推送 | `luci-app-wechatpush`（v3.6.12，即 tty228 的 ServerChan 项目） | **Lede luci feed 自带**（避免与 `tty228/luci-app-serverchan` 重复冲突） |

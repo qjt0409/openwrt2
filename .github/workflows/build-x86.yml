@@ -108,6 +108,9 @@ jobs:
           cp -r /tmp/nas-packages/network/services/linkease package/linkease
           cp -r /tmp/nas-packages/network/services/linkease-common-bin package/linkease-common-bin
           rm -rf /tmp/nas-packages
+          # 去重：/etc/config/linkease 由守护进程包 linkease 安装，删除 luci 界面包内重复文件，
+          # 避免 rootfs 组装时 opkg 报 "file already provided by package linkease"（实测 Error 255）
+          rm -f package/luci-app-linkease/root/etc/config/linkease
 
           # 4. iStore 商店（内含 luci-app-store / luci-lib-taskd / luci-lib-xterm / taskd）
           git clone --depth 1 https://github.com/linkease/istore.git package/istore
