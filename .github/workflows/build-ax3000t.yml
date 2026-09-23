@@ -66,7 +66,7 @@ jobs:
         run: cd openwrt && make download -j8 || make download -j1
 
       - name: 编译固件
-        run: cd openwrt && make -j$(nproc) V=s || make -j1 V=s
+        run: cd openwrt && make -j$(nproc) || make -j1
 
       - name: 整理产物并发布 Release（附不死U-Boot）
         env:
