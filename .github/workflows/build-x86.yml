@@ -52,6 +52,10 @@ jobs:
         run: |
           git clone --depth 1 -b ${{ env.LEDE_BRANCH }} ${{ env.LEDE_REPO }} openwrt
           cd openwrt
+          # 升级 dnsmasq 2.91 → 2.92（用户要求 >2.92）
+          sed -i 's/PKG_UPSTREAM_VERSION:=2.91/PKG_UPSTREAM_VERSION:=2.92/' package/network/services/dnsmasq/Makefile
+          sed -i 's/PKG_HASH:=f622682848b33677adb2b6ad08264618a2ae0a01da486a93fd8cd91186b3d153/PKG_HASH:=4bf50c2c1018f9fbc26037df51b90ecea0cb73d46162846763b92df0d6c3a458/' package/network/services/dnsmasq/Makefile
+          grep PKG_UPSTREAM_VERSION package/network/services/dnsmasq/Makefile | head -1
           ./scripts/feeds update -a
           ./scripts/feeds install -a
           # OAF 内核模块 Linux 6.18 兼容补丁（del_timer_sync→timer_delete_sync、from_timer→container_of）
